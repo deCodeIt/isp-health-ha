@@ -29,7 +29,8 @@ async def async_setup_entry(
     entities: list[SensorEntity] = []
     for isp in coordinator.isps:
         entities.append(ISPLatencySensor(coordinator, isp["isp_name"], isp["isp_ip"]))
-    entities.append(ISPSelectedSensor(coordinator))
+    entities.append(SelectedISPNameSensor(coordinator))
+    entities.append(SelectedISPIPSensor(coordinator))
     async_add_entities(entities)
 
 
@@ -53,13 +54,22 @@ class ISPLatencySensor(CoordinatorEntity[ISPHealthCoordinator], SensorEntity):
         return data.statuses[self._isp_name].latency_ms
 
 
-class ISPSelectedSensor(CoordinatorEntity[ISPHealthCoordinator], SensorEntity):
+_ACTIVE_ISP_DEVICE = DeviceInfo(
+    identifiers={(DOMAIN, "active_isp")},
+    name="Active ISP",
+    manufacturer="ISP Health Monitor",
+    model="Virtual",
+)
+
+
+class SelectedISPNameSensor(CoordinatorEntity[ISPHealthCoordinator], SensorEntity):
     _attr_icon = "mdi:wan"
 
     def __init__(self, coordinator: ISPHealthCoordinator) -> None:
         super().__init__(coordinator)
-        self._attr_unique_id = "isp_health_selected"
-        self._attr_name = "ISP Selected"
+        self._attr_unique_id = "isp_health_selected_name"
+        self._attr_name = "Selected ISP"
+        self._attr_device_info = _ACTIVE_ISP_DEVICE
 
     @property
     def native_value(self) -> str | None:
@@ -74,9 +84,24 @@ class ISPSelectedSensor(CoordinatorEntity[ISPHealthCoordinator], SensorEntity):
         if data is None:
             return {}
         attrs = {}
-        if data.selected_ip:
-            attrs["ip"] = data.selected_ip
         for name, status in data.statuses.items():
             attrs[f"{name}_device"] = status.device_reachable
             attrs[f"{name}_internet"] = status.internet_reachable
         return attrs
+
+
+class SelectedISPIPSensor(CoordinatorEntity[ISPHealthCoordinator], SensorEntity):
+    _attr_icon = "mdi:ip-network"
+
+    def __init__(self, coordinator: ISPHealthCoordinator) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = "isp_health_selected_ip"
+        self._attr_name = "Selected ISP IP"
+        self._attr_device_info = _ACTIVE_ISP_DEVICE
+
+    @property
+    def native_value(self) -> str | None:
+        data: ISPHealthData = self.coordinator.data
+        if data is None or data.selected_ip is None:
+            return "N/A"
+        return data.selected_ip
