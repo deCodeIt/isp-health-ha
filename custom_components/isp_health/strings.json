@@ -17,6 +17,9 @@
           "add_another": "Add another ISP"
         }
       }
+    },
+    "error": {
+      "duplicate_priority": "This priority is already assigned to another ISP. Each ISP must have a unique priority."
     }
   },
   "options": {
@@ -41,7 +44,18 @@
           "isp_ip": "Device IP Address",
           "priority": "Priority (1 = highest)"
         }
+      },
+      "edit_isp": {
+        "title": "Edit ISP",
+        "data": {
+          "isp_name": "ISP Name",
+          "isp_ip": "Device IP Address",
+          "priority": "Priority (1 = highest)"
+        }
       }
+    },
+    "error": {
+      "duplicate_priority": "This priority is already assigned to another ISP. Each ISP must have a unique priority."
     }
   }
 }

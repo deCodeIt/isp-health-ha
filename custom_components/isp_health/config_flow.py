@@ -18,6 +18,17 @@ from .const import (
 )
 
 
+def _check_duplicate_priority(
+    isps: list[dict], new_priority: int, exclude_idx: int | None = None,
+) -> str | None:
+    for i, isp in enumerate(isps):
+        if i == exclude_idx:
+            continue
+        if isp[CONF_ISP_PRIORITY] == new_priority:
+            return f"Priority {new_priority} is already used by {isp[CONF_ISP_NAME]}"
+    return None
+
+
 class ISPHealthConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
 
@@ -25,15 +36,22 @@ class ISPHealthConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._isps: list[dict] = []
 
     async def async_step_user(self, user_input=None):
+        errors = {}
         if user_input is not None:
-            self._isps.append(
-                {
-                    CONF_ISP_NAME: user_input[CONF_ISP_NAME],
-                    CONF_ISP_IP: user_input[CONF_ISP_IP],
-                    CONF_ISP_PRIORITY: user_input[CONF_ISP_PRIORITY],
-                }
+            err = _check_duplicate_priority(
+                self._isps, user_input[CONF_ISP_PRIORITY]
             )
-            return await self.async_step_add_more()
+            if err:
+                errors["base"] = "duplicate_priority"
+            else:
+                self._isps.append(
+                    {
+                        CONF_ISP_NAME: user_input[CONF_ISP_NAME],
+                        CONF_ISP_IP: user_input[CONF_ISP_IP],
+                        CONF_ISP_PRIORITY: user_input[CONF_ISP_PRIORITY],
+                    }
+                )
+                return await self.async_step_add_more()
 
         return self.async_show_form(
             step_id="user",
@@ -41,9 +59,10 @@ class ISPHealthConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 {
                     vol.Required(CONF_ISP_NAME): str,
                     vol.Required(CONF_ISP_IP): str,
-                    vol.Required(CONF_ISP_PRIORITY, default=1): int,
+                    vol.Required(CONF_ISP_PRIORITY, default=len(self._isps) + 1): int,
                 }
             ),
+            errors=errors,
         )
 
     async def async_step_add_more(self, user_input=None):
@@ -82,6 +101,7 @@ class ISPHealthOptionsFlow(config_entries.OptionsFlow):
     def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
         self._config_entry = config_entry
         self._isps: list[dict] = list(config_entry.data.get(CONF_ISPS, []))
+        self._edit_idx: int | None = None
 
     async def async_step_init(self, user_input=None):
         if user_input is not None:
@@ -132,12 +152,16 @@ class ISPHealthOptionsFlow(config_entries.OptionsFlow):
                 if 0 <= idx < len(self._isps):
                     self._isps.pop(idx)
                 return await self.async_step_manage_isps()
+            if action.startswith("edit:"):
+                self._edit_idx = int(action.split(":")[1])
+                return await self.async_step_edit_isp()
 
-        isp_list = {
-            f"remove:{i}": f"Remove {isp[CONF_ISP_NAME]} ({isp[CONF_ISP_IP]})"
-            for i, isp in enumerate(self._isps)
-        }
-        actions = {"add": "Add new ISP", **isp_list, "done": "Done"}
+        isp_actions = {}
+        for i, isp in enumerate(self._isps):
+            label = f"{isp[CONF_ISP_NAME]} ({isp[CONF_ISP_IP]}) — priority {isp[CONF_ISP_PRIORITY]}"
+            isp_actions[f"edit:{i}"] = f"Edit {label}"
+            isp_actions[f"remove:{i}"] = f"Remove {label}"
+        actions = {"add": "Add new ISP", **isp_actions, "done": "Done"}
 
         return self.async_show_form(
             step_id="manage_isps",
@@ -147,15 +171,22 @@ class ISPHealthOptionsFlow(config_entries.OptionsFlow):
         )
 
     async def async_step_add_isp(self, user_input=None):
+        errors = {}
         if user_input is not None:
-            self._isps.append(
-                {
-                    CONF_ISP_NAME: user_input[CONF_ISP_NAME],
-                    CONF_ISP_IP: user_input[CONF_ISP_IP],
-                    CONF_ISP_PRIORITY: user_input[CONF_ISP_PRIORITY],
-                }
+            err = _check_duplicate_priority(
+                self._isps, user_input[CONF_ISP_PRIORITY]
             )
-            return await self.async_step_manage_isps()
+            if err:
+                errors["base"] = "duplicate_priority"
+            else:
+                self._isps.append(
+                    {
+                        CONF_ISP_NAME: user_input[CONF_ISP_NAME],
+                        CONF_ISP_IP: user_input[CONF_ISP_IP],
+                        CONF_ISP_PRIORITY: user_input[CONF_ISP_PRIORITY],
+                    }
+                )
+                return await self.async_step_manage_isps()
 
         return self.async_show_form(
             step_id="add_isp",
@@ -166,4 +197,36 @@ class ISPHealthOptionsFlow(config_entries.OptionsFlow):
                     vol.Required(CONF_ISP_PRIORITY, default=len(self._isps) + 1): int,
                 }
             ),
+            errors=errors,
+        )
+
+    async def async_step_edit_isp(self, user_input=None):
+        idx = self._edit_idx
+        isp = self._isps[idx]
+        errors = {}
+
+        if user_input is not None:
+            err = _check_duplicate_priority(
+                self._isps, user_input[CONF_ISP_PRIORITY], exclude_idx=idx
+            )
+            if err:
+                errors["base"] = "duplicate_priority"
+            else:
+                self._isps[idx] = {
+                    CONF_ISP_NAME: user_input[CONF_ISP_NAME],
+                    CONF_ISP_IP: user_input[CONF_ISP_IP],
+                    CONF_ISP_PRIORITY: user_input[CONF_ISP_PRIORITY],
+                }
+                return await self.async_step_manage_isps()
+
+        return self.async_show_form(
+            step_id="edit_isp",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_ISP_NAME, default=isp[CONF_ISP_NAME]): str,
+                    vol.Required(CONF_ISP_IP, default=isp[CONF_ISP_IP]): str,
+                    vol.Required(CONF_ISP_PRIORITY, default=isp[CONF_ISP_PRIORITY]): int,
+                }
+            ),
+            errors=errors,
         )
