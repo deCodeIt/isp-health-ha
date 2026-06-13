@@ -1,0 +1,47 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Add ISP",
+        "description": "Enter the details for an ISP device on your network.",
+        "data": {
+          "isp_name": "ISP Name",
+          "isp_ip": "Device IP Address",
+          "priority": "Priority (1 = highest)"
+        }
+      },
+      "add_more": {
+        "title": "Add Another ISP?",
+        "description": "You have added {count} ISP(s). Add another?",
+        "data": {
+          "add_another": "Add another ISP"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "ISP Health Settings",
+        "data": {
+          "poll_interval": "Poll interval (seconds)",
+          "ping_timeout": "Ping timeout (seconds)"
+        }
+      },
+      "manage_isps": {
+        "title": "Manage ISPs",
+        "data": {
+          "action": "Action"
+        }
+      },
+      "add_isp": {
+        "title": "Add ISP",
+        "data": {
+          "isp_name": "ISP Name",
+          "isp_ip": "Device IP Address",
+          "priority": "Priority (1 = highest)"
+        }
+      }
+    }
+  }
+}
