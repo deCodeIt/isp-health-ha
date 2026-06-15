@@ -38,7 +38,8 @@ async def async_setup_entry(
 
 
 class ISPDeviceOnlineSensor(CoordinatorEntity[ISPHealthCoordinator], BinarySensorEntity):
-    _attr_device_class = BinarySensorDeviceClass.CONNECTIVITY
+    _attr_device_class = BinarySensorDeviceClass.POWER
+    _attr_icon = "mdi:power-plug"
 
     def __init__(self, coordinator: ISPHealthCoordinator, isp_name: str, isp_ip: str) -> None:
         super().__init__(coordinator)
@@ -58,6 +59,7 @@ class ISPDeviceOnlineSensor(CoordinatorEntity[ISPHealthCoordinator], BinarySenso
 
 class ISPInternetOnlineSensor(CoordinatorEntity[ISPHealthCoordinator], BinarySensorEntity):
     _attr_device_class = BinarySensorDeviceClass.CONNECTIVITY
+    _attr_icon = "mdi:signal"
 
     def __init__(self, coordinator: ISPHealthCoordinator, isp_name: str, isp_ip: str) -> None:
         super().__init__(coordinator)
