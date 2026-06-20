@@ -17,7 +17,7 @@ from .coordinator import ISPHealthCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS = ["binary_sensor", "sensor"]
+PLATFORMS = ["binary_sensor", "sensor", "switch"]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

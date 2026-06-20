@@ -133,7 +133,7 @@ class ISPHealthCoordinator(DataUpdateCoordinator[ISPHealthData]):
                 name, reachable, internet_ok, latency,
             )
 
-            if data.selected_isp is None and reachable and internet_ok:
+            if data.selected_isp is None and reachable and internet_ok and isp.get("enabled", True):
                 data.selected_isp = name
                 data.selected_ip = ip
 

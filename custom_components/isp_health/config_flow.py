@@ -5,6 +5,7 @@ from homeassistant.core import callback
 
 from .const import (
     CONF_EXTERNAL_TARGETS,
+    CONF_ISP_ENABLED,
     CONF_ISP_IP,
     CONF_ISP_NAME,
     CONF_ISP_PRIORITY,
@@ -49,6 +50,7 @@ class ISPHealthConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         CONF_ISP_NAME: user_input[CONF_ISP_NAME],
                         CONF_ISP_IP: user_input[CONF_ISP_IP],
                         CONF_ISP_PRIORITY: user_input[CONF_ISP_PRIORITY],
+                        CONF_ISP_ENABLED: True,
                     }
                 )
                 return await self.async_step_add_more()
@@ -158,7 +160,8 @@ class ISPHealthOptionsFlow(config_entries.OptionsFlow):
 
         isp_actions = {}
         for i, isp in enumerate(self._isps):
-            label = f"{isp[CONF_ISP_NAME]} ({isp[CONF_ISP_IP]}) — priority {isp[CONF_ISP_PRIORITY]}"
+            status = "enabled" if isp.get(CONF_ISP_ENABLED, True) else "disabled"
+            label = f"{isp[CONF_ISP_NAME]} ({isp[CONF_ISP_IP]}) — priority {isp[CONF_ISP_PRIORITY]} [{status}]"
             isp_actions[f"edit:{i}"] = f"Edit {label}"
             isp_actions[f"remove:{i}"] = f"Remove {label}"
         actions = {"add": "Add new ISP", **isp_actions, "done": "Done"}
@@ -184,6 +187,7 @@ class ISPHealthOptionsFlow(config_entries.OptionsFlow):
                         CONF_ISP_NAME: user_input[CONF_ISP_NAME],
                         CONF_ISP_IP: user_input[CONF_ISP_IP],
                         CONF_ISP_PRIORITY: user_input[CONF_ISP_PRIORITY],
+                        CONF_ISP_ENABLED: True,
                     }
                 )
                 return await self.async_step_manage_isps()
@@ -216,6 +220,7 @@ class ISPHealthOptionsFlow(config_entries.OptionsFlow):
                     CONF_ISP_NAME: user_input[CONF_ISP_NAME],
                     CONF_ISP_IP: user_input[CONF_ISP_IP],
                     CONF_ISP_PRIORITY: user_input[CONF_ISP_PRIORITY],
+                    CONF_ISP_ENABLED: isp.get(CONF_ISP_ENABLED, True),
                 }
                 return await self.async_step_manage_isps()
 
